@@ -1,6 +1,6 @@
 <?php
 /**
-	 * Plugin Name: MailGunWPMail
+	 * Plugin Name: MailGun SendGrid
 	 * Plugin URI: http://poweredbycoffee.co.uk
 	 * Description: Enables the loading of plugins sitting in mu-plugins (as folders)
 	 * Version: 0.1
@@ -10,23 +10,20 @@
 	 */
 
 
-Class PBC_WP_Mail_MailGun{
+Class PBC_WP_Mail_SendGrid{
 
 	var $http;
-	var $mg;
+	var $sg;
 
 	public function __construct(){
 	
 
-		if(!defined('MAILGUN_API_BASE')){
-			define("MAILGUN_API_BASE","https://api.mailgun.net");
-		}
-
-		$this->mg = \Mailgun\Mailgun::create(MAILGUN_API_KEY, MAILGUN_API_BASE);
+		$this->sg = new \SendGrid('SENDGRID_API_KEY');
 	}
 
 	public function send($from, $to, $subject, $message){
 
+		/*
 		//die("in send");
 		$builder = new \Mailgun\Message\MessageBuilder();
 		$builder->setFromAddress($from['address']);
@@ -39,6 +36,25 @@ Class PBC_WP_Mail_MailGun{
 		$builder->setSubject($subject);
 
 		$this->mg->messages()->send(MAILGUN_DOMAIN, $builder->getMessage());
+		
+		*/
+
+		$builder = new \SendGrid\Mail\Mail(); 
+		$builder->setFrom($from['address'], $from['name']);
+		$builder->setSubject($subject);
+		foreach($to as $email => $name){
+			$builder->addTo($email, $name);
+		}
+
+		$builder->addContent("text/plain", $message);
+		$builder->addContent(
+		    "text/html", $message
+		);
+		
+		
+		$response = $this->sg->send($builder);
+	
+
 	}
 }
 
@@ -48,9 +64,9 @@ if ( !function_exists('wp_mail') ) {
 
 		global $mg;
 
-		// look for the MailGun wrapper, if it doesn't exist create it
+		// look for the SendGrid wrapper, if it doesn't exist create it
 		if(!isset($mg)){
-			$mg = new PBC_WP_Mail_MailGun();
+			$mg = new PBC_WP_Mail_SendGrid();
 		}
 
 		$atts = apply_filters( 'wp_mail', compact( 'to', 'subject', 'message', 'headers', 'attachments' ) );

@@ -1,6 +1,6 @@
 {
-    "name": "poweredbycoffee/wpmail-mailgun",
-    "description": "Dropin to Use Mailgun for sending Email From WordPress",
+    "name": "poweredbycoffee/sendgrid-wpmail",
+    "description": "Dropin to Use SendGrid for sending Email From WordPress",
     "license": "gpl2",
     "type":"wordpress-muplugin",
     "authors": [
@@ -10,8 +10,6 @@
         }
     ],
     "require": {
-        "mailgun/mailgun-php": "^3.0",
-        "kriswallsmith/buzz": "^1.0",
-        "nyholm/psr7": "^1.2"
+        "sendgrid/sendgrid": "^7.3"
     }
 }
