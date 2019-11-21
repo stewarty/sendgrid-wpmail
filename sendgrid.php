@@ -1,6 +1,6 @@
 <?php
 /**
-	 * Plugin Name: MailGunWPMail
+	 * Plugin Name: MailGun SendGrid
 	 * Plugin URI: http://poweredbycoffee.co.uk
 	 * Description: Enables the loading of plugins sitting in mu-plugins (as folders)
 	 * Version: 0.1
@@ -10,27 +10,23 @@
 	 */
 
 
-include('vendor/autoload.php');
-
-
-Class PBC_WP_Mail_MailGun{
+Class PBC_WP_Mail_SendGrid{
 
 	var $http;
-	var $mg;
+	var $sg;
 
 	public function __construct(){
-		$this->http = new \Http\Adapter\Guzzle6\Client();
-		$this->mg = new \Mailgun\Mailgun(MAILGUN_API_KEY, $this->http);
+	
+
+		$this->sg = new \SendGrid('SENDGRID_API_KEY');
 	}
 
 	public function send($from, $to, $subject, $message){
 
-
-		$builder = $this->mg->MessageBuilder();
-
-
+		/*
+		//die("in send");
+		$builder = new \Mailgun\Message\MessageBuilder();
 		$builder->setFromAddress($from['address']);
-
 		foreach($to as $email => $name){
 			$builder->addToRecipient($email, [$name]);
 		}
@@ -39,104 +35,27 @@ Class PBC_WP_Mail_MailGun{
 		$builder->setTextBody($message);
 		$builder->setSubject($subject);
 
+		$this->mg->messages()->send(MAILGUN_DOMAIN, $builder->getMessage());
+		
+		*/
 
-		//pbc_dump($builder);
-
-		if ( empty( $headers ) ) {
-			$headers = array();
-		} else {
-
-			if ( !is_array( $headers ) ) {
-					// Explode the headers out, so this function can take both
-					// string headers and an array of headers.
-					 $tempheaders = explode( "\n", str_replace( "\r\n", "\n", $headers ) );
-			} else {
-					$tempheaders = $headers;
-
-			}
-
-				//  pbc_dump($builder);
-				 // die("what?");
-
-			$headers = array();
-			$cc = array();
-			$bcc = array();
-
-			// If it's actually got contents
-			if ( !empty( $tempheaders ) ) {
-					// Iterate through the raw headers
-					foreach ( (array) $tempheaders as $header ) {
-							if ( strpos($header, ':') === false ) {
-									if ( false !== stripos( $header, 'boundary=' ) ) {
-											$parts = preg_split('/boundary=/i', trim( $header ) );
-											$boundary = trim( str_replace( array( "'", '"' ), '', $parts[1] ) );
-									}
-									continue;
-							}
-							// Explode them out
-							list( $name, $content ) = explode( ':', trim( $header ), 2 );
-
-							// Cleanup crew
-							$name    = trim( $name    );
-							$content = trim( $content );
-
-							switch ( strtolower( $name ) ) {
-									// Mainly for legacy -- process a From: header if it's there
-									case 'from':
-											$bracket_pos = strpos( $content, '<' );
-											if ( $bracket_pos !== false ) {
-													// Text before the bracketed email is the "From" name.
-													if ( $bracket_pos > 0 ) {
-															$from_name = substr( $content, 0, $bracket_pos - 1 );
-															$from_name = str_replace( '"', '', $from_name );
-															$from_name = trim( $from_name );
-													}
-
-													$from_email = substr( $content, $bracket_pos + 1 );
-													$from_email = str_replace( '>', '', $from_email );
-													$from_email = trim( $from_email );
-
-											// Avoid setting an empty $from_email.
-											} elseif ( '' !== trim( $content ) ) {
-													$from_email = trim( $content );
-											}
-											break;
-									case 'cc':
-											$cc = array_merge( (array) $cc, explode( ',', $content ) );
-											break;
-									case 'bcc':
-											$bcc = array_merge( (array) $bcc, explode( ',', $content ) );
-											break;
-									default:
-											// Add it to our grand headers array
-											$headers[trim( $name )] = trim( $content );
-											break;
-							}
-					}
-			}
-
-			foreach ($cc as $email){
-				$builder->addCcRecipient($email);
-			}
-
-			foreach ($bcc as $email){
-				$builder->addCcRecipient($email);
-			}
-
-			foreach ($headers as $name => $data){
-				$builder->addCustomHeader($name, $data);
-			}
-
+		$builder = new \SendGrid\Mail\Mail(); 
+		$builder->setFrom($from['address'], $from['name']);
+		$builder->setSubject($subject);
+		foreach($to as $email => $name){
+			$builder->addTo($email, $name);
 		}
 
-		try{
-				$this->mg->post( MAILGUN_DOMAIN . "/messages", $builder->getMessage());
-			} catch(exception $e){
+		$builder->addContent("text/plain", $message);
+		$builder->addContent(
+		    "text/html", $message
+		);
+		
+		
+		$response = $this->sg->send($builder);
+	
 
-			}
-
-		 // die();
-		}
+	}
 }
 
 // Only let this get created once
@@ -145,9 +64,9 @@ if ( !function_exists('wp_mail') ) {
 
 		global $mg;
 
-		// look for the MailGun wrapper, if it doesn't exist create it
+		// look for the SendGrid wrapper, if it doesn't exist create it
 		if(!isset($mg)){
-			$mg = new PBC_WP_Mail_MailGun();
+			$mg = new PBC_WP_Mail_SendGrid();
 		}
 
 		$atts = apply_filters( 'wp_mail', compact( 'to', 'subject', 'message', 'headers', 'attachments' ) );
@@ -341,3 +260,4 @@ if ( !function_exists('wp_mail') ) {
 		return true;
 	}
 }
+
