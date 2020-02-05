@@ -18,7 +18,7 @@ Class PBC_WP_Mail_SendGrid{
 	public function __construct(){
 	
 
-		$this->sg = new \SendGrid('SENDGRID_API_KEY');
+		$this->sg = new \SendGrid(SENDGRID_API_KEY);
 	}
 
 	public function send($from, $to, $subject, $message){
